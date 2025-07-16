@@ -24,7 +24,7 @@ export interface Notification {
   read: boolean;
 }
 
-export const schools: School[] = [
+export let schools: School[] = [
   {
     id: '1',
     name: 'Utunyoni Highschool',
@@ -59,10 +59,38 @@ export const schools: School[] = [
     location: 'Gisenyi',
     totalStudents: 320,
     pendingCount: 18
+  },
+  {
+    id: '6',
+    name: 'Unity Secondary School',
+    location: 'Musanze',
+    totalStudents: 480,
+    pendingCount: 22
+  },
+  {
+    id: '7',
+    name: 'Excellence International School',
+    location: 'Kigali',
+    totalStudents: 750,
+    pendingCount: 35
+  },
+  {
+    id: '8',
+    name: 'Sunrise Academy',
+    location: 'Rubavu',
+    totalStudents: 390,
+    pendingCount: 16
+  },
+  {
+    id: '9',
+    name: 'Future Leaders School',
+    location: 'Huye',
+    totalStudents: 540,
+    pendingCount: 28
   }
 ];
 
-export const students: Student[] = [
+export let students: Student[] = [
   {
     id: '1',
     name: 'Jean Pierre Mugisha',
@@ -142,6 +170,86 @@ export const students: Student[] = [
     grade: '9th',
     status: 'Open',
     schoolId: '5'
+  },
+  {
+    id: '9',
+    name: 'Kevin Uwimana',
+    gender: 'Male',
+    age: 16,
+    supportNeeded: 'Books and Supplies',
+    grade: '11th',
+    status: 'Sponsored',
+    schoolId: '6'
+  },
+  {
+    id: '10',
+    name: 'Claudine Mukamazimpaka',
+    gender: 'Female',
+    age: 15,
+    supportNeeded: 'School Fees',
+    grade: '10th',
+    status: 'Open',
+    schoolId: '6'
+  },
+  {
+    id: '11',
+    name: 'Samuel Nkurunziza',
+    gender: 'Male',
+    age: 17,
+    supportNeeded: 'Uniform and Supplies',
+    grade: '12th',
+    status: 'Sponsored',
+    schoolId: '7'
+  },
+  {
+    id: '12',
+    name: 'Diane Uwizeyimana',
+    gender: 'Female',
+    age: 16,
+    supportNeeded: 'Books and Supplies',
+    grade: '11th',
+    status: 'Open',
+    schoolId: '7'
+  },
+  {
+    id: '13',
+    name: 'Eric Habimana',
+    gender: 'Male',
+    age: 15,
+    supportNeeded: 'School Fees',
+    grade: '10th',
+    status: 'Sponsored',
+    schoolId: '8'
+  },
+  {
+    id: '14',
+    name: 'Immaculee Nyirabahizi',
+    gender: 'Female',
+    age: 14,
+    supportNeeded: 'Uniform',
+    grade: '9th',
+    status: 'Open',
+    schoolId: '8'
+  },
+  {
+    id: '15',
+    name: 'Benjamin Uwimana',
+    gender: 'Male',
+    age: 16,
+    supportNeeded: 'School Fees',
+    grade: '11th',
+    status: 'Sponsored',
+    schoolId: '9'
+  },
+  {
+    id: '16',
+    name: 'Josephine Mukansanga',
+    gender: 'Female',
+    age: 15,
+    supportNeeded: 'Books and Supplies',
+    grade: '10th',
+    status: 'Open',
+    schoolId: '9'
   }
 ];
 
@@ -177,3 +285,47 @@ export const notifications: Notification[] = [
     read: false
   }
 ];
+
+// Helper functions for managing schools data
+let listeners: (() => void)[] = [];
+
+export function addSchoolToData(school: School): void {
+  schools.push(school);
+  
+  // Notify all listeners that data has changed
+  listeners.forEach(listener => listener());
+}
+
+export function getAllSchools(): School[] {
+  return [...schools]; // Return a copy to prevent direct mutation
+}
+
+export function subscribeToSchoolChanges(callback: () => void): () => void {
+  listeners.push(callback);
+  
+  // Return unsubscribe function
+  return () => {
+    listeners = listeners.filter(listener => listener !== callback);
+  };
+}
+
+export function getSchoolCount(): number {
+  return schools.length;
+}
+
+// Helper functions for managing students data
+export function addStudentToData(student: Student): void {
+  students.push(student);
+}
+
+export function getAllStudents(): Student[] {
+  return [...students]; // Return a copy to prevent direct mutation
+}
+
+export function getStudentsBySchool(schoolId: string): Student[] {
+  return students.filter(student => student.schoolId === schoolId);
+}
+
+export function getStudentById(studentId: string): Student | undefined {
+  return students.find(student => student.id === studentId);
+}

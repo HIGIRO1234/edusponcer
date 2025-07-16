@@ -50,7 +50,7 @@ export default function Sidebar() {
 					/>
 					<div className="ml-2 flex items-baseline overflow-hidden">
 						<span className="text-2xl font-bold text-gray-900 whitespace-nowrap">
-							edusponsor
+							EduSponsor
 						</span>
 					</div>
 				</div>

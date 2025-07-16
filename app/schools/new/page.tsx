@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { addSchool, type School } from '@/lib/schools';
 
 export default function NewSchoolPage() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Omit<School, 'id'>>({
     name: '',
     location: '',
@@ -14,23 +15,31 @@ export default function NewSchoolPage() {
     principalName: '',
     type: 'Public School',
     totalStudents: 0,
-    description: ''
+    description: '',
+    pendingCount: 0
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    
     try {
       const newSchool = await addSchool(formData);
+      
       if (newSchool && newSchool.id) {
-        // Redirect to the school's dashboard with the new school ID
-        window.location.href = `/schools?newSchoolId=${newSchool.id}`;
+        // Use a small delay to ensure the data change event propagates
+        setTimeout(() => {
+          window.location.href = `/schools`;
+        }, 100);
       } else {
         console.error('Failed to add school: Invalid response');
-        // TODO: Show error message to user
+        alert('Failed to add school. Please try again.');
       }
     } catch (error) {
       console.error('Failed to add school:', error);
-      // TODO: Show error message to user
+      alert('Failed to add school. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -38,7 +47,7 @@ export default function NewSchoolPage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'totalStudents' ? parseInt(value) || 0 : value
+      [name]: name === 'totalStudents' || name === 'pendingCount' ? parseInt(value) || 0 : value
     }));
   };
 
@@ -149,6 +158,26 @@ export default function NewSchoolPage() {
               </div>
             </div>
 
+            {/* Pending Requests */}
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="pendingCount" className="block text-sm font-medium text-gray-700 mb-2">
+                  Pending Requests
+                </label>
+                <input
+                  type="number"
+                  id="pendingCount"
+                  name="pendingCount"
+                  value={formData.pendingCount}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-800 bg-white"
+                  placeholder="Number of pending requests"
+                  min="0"
+                />
+              </div>
+              <div></div>
+            </div>
+
             {/* Contact Information */}
             <div className="grid grid-cols-2 gap-6">
               <div>
@@ -226,9 +255,10 @@ export default function NewSchoolPage() {
               </Link>
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                disabled={isSubmitting}
+                className="px-6 py-2.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Add School
+                {isSubmitting ? 'Adding School...' : 'Add School'}
               </button>
             </div>
           </form>

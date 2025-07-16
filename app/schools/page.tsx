@@ -1,15 +1,60 @@
+'use client';
+
 import Link from 'next/link';
 import { Building2, Users, MapPin, ArrowUpRight } from 'lucide-react';
-import { schools } from '@/lib/data';
+import { getAllSchools, subscribeToSchoolChanges } from '@/lib/data';
+import { useEffect, useState } from 'react';
 
 export default function SchoolsPage() {
+  const [schoolsList, setSchoolsList] = useState(() => {
+    return getAllSchools();
+  });
+
+  const refreshSchools = () => {
+    setSchoolsList(getAllSchools());
+  };
+
+  useEffect(() => {
+    // Subscribe to school changes
+    const unsubscribe = subscribeToSchoolChanges(() => {
+      refreshSchools();
+    });
+    
+    // Check if we need to refresh based on URL params
+    const checkForRefresh = () => {
+      if (window.location.search.includes('refresh=true')) {
+        refreshSchools();
+        // Clean up URL
+        window.history.replaceState({}, '', '/schools');
+      }
+    };
+    
+    checkForRefresh();
+    
+    // Also refresh when the page becomes visible (in case user navigates back)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshSchools();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', refreshSchools);
+    
+    return () => {
+      unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', refreshSchools);
+    };
+  }, []);
+
   return (
     <div className="flex-1 flex flex-col p-8 bg-gray-50">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-gray-800 mb-2">Schools</h1>
-          <p className="text-gray-600">Manage and monitor all partner schools</p>
+          <p className="text-gray-600">Manage and monitor all partner schools ({schoolsList.length} total)</p>
         </div>
         <Link
           href="/schools/new"
@@ -21,7 +66,7 @@ export default function SchoolsPage() {
 
       {/* Schools Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {schools.map((school) => (
+        {schoolsList.map((school) => (
           <div
             key={school.id}
             className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group"

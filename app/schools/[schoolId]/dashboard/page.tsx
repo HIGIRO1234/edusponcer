@@ -3,13 +3,67 @@
 import { Building2, User, Monitor, Bell, Search, ChevronDown } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { schools, students } from '@/lib/data';
+import { getAllSchools, getStudentsBySchool } from '@/lib/data';
+import { useState, useEffect, useRef } from 'react';
 
 export default function SchoolDashboardPage() {
   const { schoolId } = useParams();
-  const school = schools.find(s => s.id === schoolId);
-  const schoolStudents = students.filter(s => s.schoolId === schoolId);
+  const allSchools = getAllSchools();
+  const school = allSchools.find(s => s.id === schoolId);
+  const schoolStudents = getStudentsBySchool(schoolId as string);
   const pendingCount = schoolStudents.filter(s => s.status === 'Open').length;
+  
+  const [sortBy, setSortBy] = useState('newest');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const sortOptions = [
+    { value: 'newest', label: 'Newest' },
+    { value: 'oldest', label: 'Oldest' },
+    { value: 'name-asc', label: 'Name A-Z' },
+    { value: 'name-desc', label: 'Name Z-A' },
+    { value: 'age-asc', label: 'Age (Low to High)' },
+    { value: 'age-desc', label: 'Age (High to Low)' }
+  ];
+
+  const getSortedStudents = () => {
+    const sorted = [...schoolStudents];
+    
+    switch (sortBy) {
+      case 'oldest':
+        return sorted.reverse();
+      case 'name-asc':
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+      case 'name-desc':
+        return sorted.sort((a, b) => b.name.localeCompare(a.name));
+      case 'age-asc':
+        return sorted.sort((a, b) => a.age - b.age);
+      case 'age-desc':
+        return sorted.sort((a, b) => b.age - a.age);
+      case 'newest':
+      default:
+        return sorted;
+    }
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+    setIsDropdownOpen(false);
+  };
 
   if (!school) return null;
 
@@ -108,11 +162,32 @@ export default function SchoolDashboardPage() {
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
-            <div className="relative">
-              <button className="flex items-center space-x-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
-                <span>Sort by: Newest</span>
-                <ChevronDown className="h-5 w-5 text-gray-500" />
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center space-x-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <span>Sort by: {sortOptions.find(option => option.value === sortBy)?.label}</span>
+                <ChevronDown className={`h-5 w-5 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
+              
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  <div className="py-1">
+                    {sortOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleSortChange(option.value)}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                          sortBy === option.value ? 'bg-green-50 text-green-600 font-medium' : 'text-gray-700'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -128,10 +203,11 @@ export default function SchoolDashboardPage() {
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Support Needed</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
-              {schoolStudents.map((student) => (
+              {getSortedStudents().map((student) => (
                 <tr key={student.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -158,6 +234,14 @@ export default function SchoolDashboardPage() {
                       {student.status}
                     </span>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <Link
+                      href={`/schools/${schoolId}/students/${student.id}`}
+                      className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      View Details
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -167,7 +251,7 @@ export default function SchoolDashboardPage() {
         {/* Pagination */}
         <div className="flex items-center justify-between bg-white px-6 py-4 rounded-xl shadow-sm mt-6">
           <div className="flex items-center text-sm text-gray-500">
-            <span>Showing 1 to {schoolStudents.length} of {schoolStudents.length} results</span>
+            <span>Showing 1 to {getSortedStudents().length} of {getSortedStudents().length} results</span>
           </div>
           <div className="flex items-center space-x-2">
             <button className="inline-flex items-center px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
